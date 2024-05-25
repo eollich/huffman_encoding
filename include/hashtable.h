@@ -1,9 +1,15 @@
-#ifndef __HUFFMAN_FREQUENCY_TABLE_H__
-#define __HUFFMAN_FREQUENCY_TABLE_H__
+//refactor to include hashnode functions
+
+
+
+#ifndef __HASHTABLE_H__
+#define __HASHTABLE_H__
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
-#define HASHTALBE_INTIAL_SIZE (1 << 4)
+#define HASHTABLE_INTIAL_SIZE (1 << 4)
 #define LOAD_FACTOR_THRESHOLD 0.75
 
 typedef struct HashtableNode{
@@ -13,15 +19,16 @@ typedef struct HashtableNode{
 } HashtableNode;
 
 typedef struct{
+  HashtableNode** buckets;
   size_t num_buckets;
   size_t size;
-  size_t (*hashfunction)(void*);
-  void (*freefunction)(void*);
+  size_t (*hashFunction)(const char*);
+  void (*freeFunction)(void*);
 
 } Hashtable;
 
 
-Hashtable* hashtableInit(const size_t (*hash_function)(void*), const void (*free_function(void*)));
+Hashtable* hashtableInit(size_t (*hashFunction)(const char*), void (*freeFunction)(void*));
 
 void hashtableResize(Hashtable* hashtable);
 
@@ -33,8 +40,8 @@ void hashtableDeleteEntry(Hashtable* hashtable, const char* key);
 
 void hashtableDelete(Hashtable* hashtable);
 
-void hashtableDefaultFreeFunction(HashtableNode* node);
+void hashtableDefaultFreeFunction(void* value);
 
-size_t hashtableDefaultHashFunction(const char* key);
+size_t hashtableDefaultHashFunction(const char* key); //fnv1a
 
 #endif

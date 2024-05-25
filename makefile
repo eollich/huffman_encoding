@@ -13,12 +13,13 @@ else
 	CFLAGS = $(CCFLAGS)
 endif
 
-SOURCES=huffman
-OBJECTS=$(foreach source,$(SOURCES), $(OBJ)/$(SOURCES).o)
+SOURCES=main hashtable
+
+OBJECTS=$(foreach source,$(SOURCES),$(OBJ)/$(source).o)
 
 all: $(OBJECTS)
 	[ -d $(BIN) ] || mkdir -p $(BIN)
-	$(CC) -o $(BIN)/huffman $^
+	$(CC) -o $(BIN)/main $^
 
 $(OBJ)/%.o: $(SRC)/%.c
 	[ -d $(OBJ) ] || mkdir -p $(OBJ)
