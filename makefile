@@ -13,7 +13,7 @@ ifeq ($(DEBUG), true)
 	CCFLAGS += $(DEBUG_FLAGS)
 endif
 
-SOURCES=main hashtable pqueue btree
+SOURCES=main hashtable pqueue btree huffman
 
 OBJECTS=$(foreach source,$(SOURCES),$(OBJ)/$(source).o)
 

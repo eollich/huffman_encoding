@@ -5,15 +5,14 @@
 //Code Table        Hashmap
 //Encoded Data      bit stream / array of bits
 
-#include <hashtable.h>
-#include <btree.h>
-
-#include <pqueue.h>
-
+#include <huffman.h>
 
 int main(void){
 
-
+  char* str = "Hello World\nHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH";
+  Hashtable* ht = huffmanGenerateFrequencyTable(str);
+  char* s = huffmanGetFrequencyTableStr(ht);
+  printf("%s\n", s);
 
   return 0;
 }
