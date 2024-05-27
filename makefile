@@ -4,16 +4,16 @@ SRC=src
 OBJ=obj
 BIN=bin
 CCFLAGS=-Iinclude
-DEBUG_FLAGS= -g -O0 -Wall
+DEBUG_FLAGS=-g -O0 -Wall
 DEBUG ?= false
 
+override DEBUG := $(DEBUG)
+
 ifeq ($(DEBUG), true)
-	CFLAGS += $(CCFLAGS) $(DEBUG_FLAGS)
-else
-	CFLAGS = $(CCFLAGS)
+	CCFLAGS += $(DEBUG_FLAGS)
 endif
 
-SOURCES=main hashtable pqueue
+SOURCES=main hashtable pqueue btree
 
 OBJECTS=$(foreach source,$(SOURCES),$(OBJ)/$(source).o)
 
@@ -23,14 +23,14 @@ all: $(OBJECTS)
 
 $(OBJ)/%.o: $(SRC)/%.c
 	[ -d $(OBJ) ] || mkdir -p $(OBJ)
-	$(CC) -c $(CFLAGS) -o $@ $^
+	$(CC) -c $(CCFLAGS) -o $@ $^
 
-override DEBUG=true
-debug: all
+debug: 
+	$(MAKE) DEBUG=true all
 
 test: $(BIN)/huffman
 	./$^
 
 clean:
-	rm -rf bin
-	rm -rf obj
+	rm -rf $(BIN)
+	rm -rf $(OBJ)
