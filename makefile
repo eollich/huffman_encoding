@@ -13,7 +13,7 @@ else
 	CFLAGS = $(CCFLAGS)
 endif
 
-SOURCES=main hashtable
+SOURCES=main hashtable huffman
 
 OBJECTS=$(foreach source,$(SOURCES),$(OBJ)/$(source).o)
 
