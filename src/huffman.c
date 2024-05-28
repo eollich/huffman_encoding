@@ -195,7 +195,7 @@ BTreeNode* huffmanBuildTree(PQueue* pqueue) {
 
 
 void huffmanGenerateCodes(BTreeNode* root, Hashtable* codesTable, char* code, int depth) {
-  printf("DEPTH: %d", depth);
+  //printf("DEPTH: %d", depth);
   if (!root->left && !root->right) {
     char* finalCode = (char*)malloc(depth + 1);
     strncpy(finalCode, code, depth);
