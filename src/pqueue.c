@@ -60,6 +60,7 @@ PQueueNode* pQueuePop(PQueue* pqueue){
   if(!pqueue || pqueue->num_nodes==0) return NULL;
   PQueueNode* node = pqueue->root;
   pqueue->root = node->next;
+  pqueue->num_nodes--;
   return node; 
 }
 

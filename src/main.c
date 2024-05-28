@@ -1,18 +1,33 @@
-//Frequency Table   Hashmap
-//Priority Queue    Priority Queue
-//Tree              Tree
-//Tree Node         Node
-//Code Table        Hashmap
-//Encoded Data      bit stream / array of bits
-
 #include <huffman.h>
 
-int main(void){
 
-  char* str = "Hello World\nHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH";
-  Hashtable* ht = huffmanGenerateFrequencyTable(str);
-  char* s = huffmanGetFrequencyTableStr(ht);
-  printf("%s\n", s);
+int main(void) {
+    const char* str = "Hello World!";
+    // frequency table
+    Hashtable* ht = huffmanGenerateFrequencyTable(str);
 
-  return 0;
+    // priority queue
+    PQueue* pq = huffmanGeneratePriorityQueue(ht);
+
+    // huffman tree
+    BTreeNode* huffmanTreeRoot = huffmanBuildTree(pq);
+
+    // huffman codes
+    Hashtable* codesTable = huffmanGenerateCodesTable(huffmanTreeRoot);
+    if (!codesTable) {
+        printf("Failed to generate Huffman codes.\n");
+        hashtableDelete(ht);
+        pQueueDelete(pq, 0);
+        bTreeDelete(huffmanTreeRoot);
+        return EXIT_FAILURE;
+    }
+    printf("Huffman Codes:\n");
+    huffmanPrintCodes(codesTable);
+
+     hashtableDelete(ht);
+     pQueueDelete(pq, 0);
+     //bTreeDelete(huffmanTreeRoot);
+     hashtableDelete(codesTable);
+
+    return 0;
 }
