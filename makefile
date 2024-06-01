@@ -13,7 +13,7 @@ ifeq ($(DEBUG), true)
 	CCFLAGS += $(DEBUG_FLAGS)
 endif
 
-SOURCES=main hashtable pqueue btree huffman
+SOURCES=main huffman
 
 OBJECTS=$(foreach source,$(SOURCES),$(OBJ)/$(source).o)
 
@@ -25,11 +25,11 @@ $(OBJ)/%.o: $(SRC)/%.c
 	[ -d $(OBJ) ] || mkdir -p $(OBJ)
 	$(CC) -c $(CCFLAGS) -o $@ $^
 
+
 debug: 
 	$(MAKE) DEBUG=true all
 
-test: $(BIN)/huffman
-	./$^
+
 
 clean:
 	rm -rf $(BIN)

@@ -1,18 +1,35 @@
 #ifndef __HUFFMAN_H__
 #define __HUFFMAN_H__
 
-#include <hashtable.h>
-#include <pqueue.h>
-#include <btree.h>
+#include <stdlib.h>
 
-Hashtable* huffmanGenerateFrequencyTable(const char* str);
-PQueue* huffmanGeneratePriorityQueue(Hashtable* hashtable);
-BTreeNode* huffmanBuildTree(PQueue* pqueue);
-Hashtable* huffmanGenerateCodesTable(BTreeNode* root);
+typedef struct HTNode{
+  char val;
+  struct HTNode* left;
+  struct HTNode* right;
+} HTNode;
 
-char* huffmanGetFrequencyTableStr(Hashtable* hashtable);
+typedef struct PQNode{
+  int priority;
+  HTNode* data;
+  struct PQNode* next;
+} PQNode;
 
-void huffmanPrintPQ(PQueue* pqueue);
-void huffmanPrintCodes(Hashtable* codesTable);
-void huffmanPrintTree(BTreeNode* node, int depth);
+typedef struct {
+  int num_nodes;
+  PQNode* root;
+} PQ;
+
+
+char* huffmanGenerateCodes(char* str);
+void huffmanPrintCodes(char* codes);
+
+size_t* huffmanGenFT(char* str);
+PQ* huffmanGenPQ(size_t* ft);
+HTNode* huffmanGenHT(PQ* pq);
+char* huffmanGenCodes(HTNode* ht_root);
+
+
+void printFrequencyTable(size_t* frequency_table);
+
 #endif

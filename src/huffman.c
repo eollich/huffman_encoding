@@ -1,254 +1,215 @@
-#include "btree.h"
-#include "pqueue.h"
 #include <huffman.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+//frequency table DONE
+//pq
+//huffman tree
+//code table
+//code len table?
 
-char* huffmanGetFrequencyTableStr(Hashtable* ht) {
-  // Initial buffer allocation size
-  size_t buffer_size = 256;
-  char *temp_buffer = (char *)malloc(buffer_size);
-  if (temp_buffer == NULL) {
-    perror("Failed to allocate memory");
+void pQInsert(PQ* pqueue, HTNode* data, size_t priority) {
+  PQNode* new_node = (PQNode*)malloc(sizeof(PQNode));
+  if(!new_node){
+    fprintf(stderr, "Malloc error when trying to malloc PQNode struct in huffmanGenPQ\n");
     exit(EXIT_FAILURE);
   }
-  temp_buffer[0] = '\0'; 
+  new_node->priority = priority;
+  new_node->data = data;
+  new_node->next = NULL;
 
-  HashtableNode* cur;
-  for (size_t i = 0; i < ht->num_buckets; i++) {
-    cur = ht->buckets[i];
-    while (cur) {
-      size_t entry_size = snprintf(NULL, 0, "%s:%zu:", (char*)cur->key, *(size_t*)cur->value) + 1;
-      char *entry = (char *)malloc(entry_size);
-      if (entry == NULL) {
-        perror("Failed to allocate memory");
+  if (!pqueue->root || priority < pqueue->root->priority) {
+    new_node->next = pqueue->root;
+    pqueue->root = new_node;
+  } else {
+    PQNode* current = pqueue->root;
+    while (current->next && current->next->priority <= priority) {
+      current = current->next;
+    }
+    new_node->next = current->next;
+    current->next = new_node;
+  }
+  pqueue->num_nodes++;
+}
+
+
+PQNode* pqPop(PQ* pq) {
+    if (!pq || !pq->root) return NULL;
+    PQNode* temp = pq->root;
+    pq->root = pq->root->next;
+    temp->next = NULL;
+  pq->num_nodes--;
+    return temp;
+}
+
+
+
+size_t* huffmanGenFT(char* str){
+  size_t* frequency = calloc(256, sizeof(size_t));
+  if(!frequency){
+    fprintf(stderr, "Calloc error when creating huffman frequency table in huffmanGenFT\n");
+    exit(EXIT_FAILURE);
+  }
+  while(*str!='\0'){
+    frequency[(size_t)*str]++;
+    str++;
+  }
+  return frequency;
+}
+
+PQ* huffmanGenPQ(size_t* ft){
+  PQ* pq = malloc(sizeof(PQ));
+  if(!pq){
+    fprintf(stderr, "Malloc error when trying to malloc PQ struct in huffmanGenPQ\n");
+    exit(EXIT_FAILURE);
+  }
+
+  for(int i=0; i<256; i++){
+    if(ft[i]!=0){
+      PQNode* pqn = malloc(sizeof(PQNode));
+      if(!pqn){
+        fprintf(stderr, "Malloc error when trying to malloc PQNode struct in huffmanGenPQ\n");
         exit(EXIT_FAILURE);
       }
-      snprintf(entry, entry_size, "%s:%zu:", (char*)cur->key, *(size_t*)cur->value);
-
-      size_t new_size = strlen(temp_buffer) + entry_size + 1;
-      if (new_size > buffer_size) {
-        buffer_size = new_size * 2;
-        temp_buffer = (char *)realloc(temp_buffer, buffer_size);
-        if (temp_buffer == NULL) {
-          perror("Failed to allocate memory");
-          exit(EXIT_FAILURE);
-        }
+      HTNode* htn = malloc(sizeof(HTNode));
+      if(!htn){
+        fprintf(stderr, "Malloc error when trying to malloc HTNode struct in huffmanGenPQ\n");
+        exit(EXIT_FAILURE);
       }
-
-      strcat(temp_buffer, entry);
-
-      free(entry);
-
-      cur = cur->next;
-    }
-  }
-
-  return temp_buffer;
-}
-
-
-
-void printFreq(Hashtable* ht){
-  HashtableNode* cur;
-  for(size_t i = 0; i<ht->num_buckets; i++){
-    cur = ht->buckets[i];
-    while(cur){
-      printf("Bucket: %zu -- %s: %d\n", i, (char*)cur->key, *(int*)(cur->value));
-      cur = cur->next;
-    }
-  }
-}
-
-
-//switch key for either priority queue node or tree node
-Hashtable* huffmanGenerateFrequencyTable(const char* str){
-  if(!str) return NULL;
-
-  Hashtable* hashtable = hashtableInit(NULL, NULL);
-
-  int index = 0;
-  while(str[index]!='\0'){
-    char key[] = {str[index], '\0'};
-    void* val = hashtableLookup(hashtable, &key);
-    if(!val){
-      int* value = malloc(sizeof(int));
-      *value = 1;
-      hashtableInsert(hashtable, &key, value);
-    }else{
-      (*(int*)val)++;
-    }
-
-    index++;
-  }
-
-  return hashtable;
-
-}
-
-PQueue* huffmanGeneratePriorityQueue(Hashtable* hashtable){
-  if(!hashtable || hashtable->size < 1) return NULL;
-
-  HashtableNode* cur;
-  PQueue* pq = pQueueInit(NULL);
-  for(size_t i=0; i<hashtable->num_buckets; i++){
-    cur = hashtable->buckets[i];
-    while(cur){
-      BTreeNode* node = bTreeNodeInit(*(size_t*)cur->value, cur->key, NULL, NULL, NULL);
-      pQueueInsert(pq, node, *(size_t*)cur->value);
-      cur = cur->next;
+      htn->val = i;
+      htn->left = NULL;
+      htn->right = NULL;
+      pQInsert(pq, htn, ft[i]);
     }
   }
   return pq;
 }
 
-void huffmanPrintPQ(PQueue* pqueue){
-  if(!pqueue || !pqueue->root) return;
-  PQueueNode* cur = pqueue->root;
-  while(cur){
-    BTreeNode* btn_temp = cur->data;
-    printf("%zu: %s\n", cur->priority, (char*)(btn_temp->data));
-    cur = cur->next;
+HTNode* huffmanGenHT(PQ* pq);
+char* huffmanGenCodes(HTNode* ht_root);
+
+
+HTNode* huffmanGenHT(PQ* pq){
+  PQNode* left;
+  PQNode* right;
+  HTNode* parent;
+
+  HTNode* root = NULL;
+
+  while(pq->num_nodes >1){
+    left = pqPop(pq);
+    right = pqPop(pq);
+    parent = malloc(sizeof(HTNode));
+    parent->left = left->data;
+    parent->right = right->data;
+
+    pQInsert(pq, parent, left->priority + right->priority);
+    free(left);
+    free(right);
   }
-}
-
-//BTreeNode* huffmanBuildTree(PQueue* pqueue) {
-//  huffmanPrintPQ(pqueue);
-//  //while (pqueue->num_nodes > 1) {
-//  //  PQueueNode* leftNode = pQueuePop(pqueue);
-//  //  PQueueNode* rightNode = pQueuePop(pqueue);
-//
-//  //  size_t combinedWeight = leftNode->priority + rightNode->priority;
-//  //  BTreeNode* internalNode = bTreeNodeInit(combinedWeight, NULL, NULL, leftNode->data, rightNode->data);
-//
-//  //  pQueueInsert(pqueue, internalNode, combinedWeight);
-//  //  //pQueueNodeDelete(leftNode);
-//  //  //pQueueNodeDelete(rightNode);
-//  //}
-//
-//  //PQueueNode* rootNode = pQueuePop(pqueue);
-//  //BTreeNode* root = (BTreeNode*)rootNode->data;
-//  ////pQueueNodeDelete(rootNode);
-//
-//  //return root;
-//
-//  while(pqueue->num_nodes > 1){
-//    PQueueNode* left_node = pQueuePop(pqueue);
-//    PQueueNode* right_node = pQueuePop(pqueue);
-//    BTreeNode* left_b_node = left_node->data;
-//    BTreeNode* right_b_node = right_node->data;
-//
-//    size_t combined_weight = left_node->priority + right_node->priority;
-//
-//    BTreeNode* parent = bTreeNodeInit(combined_weight, NULL, NULL, left_b_node, right_b_node);
-//    left_b_node->parent = parent;
-//    right_b_node->parent = parent;
-//
-//    pQueueInsert(pqueue, parent, combined_weight);
-//
-//    free(left_node);
-//    free(right_node);
-//
-//
-//  }
-//
-//
-//  BTreeNode* root = (BTreeNode*)pQueuePop(pqueue)->data;
-//
-//
-//
-//  return root;
-//
-//}
-
-BTreeNode* huffmanBuildTree(PQueue* pqueue) {
-  while (pqueue->num_nodes > 1) {
-    PQueueNode* left_node = pQueuePop(pqueue);
-    PQueueNode* right_node = pQueuePop(pqueue);
-
-    BTreeNode* left_b_node = (BTreeNode*)left_node->data;
-    BTreeNode* right_b_node = (BTreeNode*)right_node->data;
-
-    size_t combined_weight = left_node->priority + right_node->priority;
-
-    BTreeNode* parent = bTreeNodeInit(combined_weight, NULL, NULL, left_b_node, right_b_node);
-    if (!parent) {
-      printf("Failed to allocate parent node\n");
-      return NULL;
-    }
-
-    left_b_node->parent = parent;
-    right_b_node->parent = parent;
-
-    pQueueInsert(pqueue, parent, combined_weight);
-
-    free(left_node);
-    free(right_node);
-  }
-
-  PQueueNode* rootNode = pQueuePop(pqueue);
-  BTreeNode* root = (BTreeNode*)rootNode->data;
-  free(rootNode);
-
+  left = pqPop(pq);
+  root = left->data;
+  free(left);
   return root;
 }
 
 
-void huffmanGenerateCodes(BTreeNode* root, Hashtable* codesTable, char* code, int depth) {
-  //printf("DEPTH: %d", depth);
-  if (!root->left && !root->right) {
-    char* finalCode = (char*)malloc(depth + 1);
-    strncpy(finalCode, code, depth);
-    finalCode[depth] = '\0';
-    hashtableInsert(codesTable, root->data, finalCode);
+void huffmanGenCodesHelper(char* codes, HTNode* node, char code, int depth){
+  if(!node->left && !node->right){
+    codes[node->val] = code;
     return;
   }
 
-  if (root->left) {
-    code[depth] = '0';
-    huffmanGenerateCodes(root->left, codesTable, code, depth + 1);
+  if(node->left){
+    huffmanGenCodesHelper(codes, node->left, code<<1 | 0, depth+1);
   }
 
-  if (root->right) {
-    code[depth] = '1';
-    huffmanGenerateCodes(root->right, codesTable, code, depth + 1);
+  if(node->right){
+    huffmanGenCodesHelper(codes, node->right, code<<1 | 1, depth+1);
   }
 }
 
-Hashtable* huffmanGenerateCodesTable(BTreeNode* root) {
-  Hashtable* codesTable = hashtableInit(NULL, NULL);
-  char code[256]; //max depth of 256 
-  huffmanGenerateCodes(root, codesTable, code, 0);
-  return codesTable;
+char* huffmanGenCodes(HTNode* ht_root){
+  char* codes = malloc(256 * sizeof(char));
+  memset(codes, -1, 256*sizeof(char));
+
+  huffmanGenCodesHelper(codes, ht_root, 0, 0);
+
+
+  return codes;
 }
 
-void huffmanPrintCodes(Hashtable* codesTable) {
-  if (!codesTable) {
-    printf("Codes table is NULL\n");
-    return;
-  }
 
-  for (size_t i = 0; i < codesTable->num_buckets; ++i) {
-    HashtableNode* node = codesTable->buckets[i];
-    while (node) {
-      char* character = (char*)node->key;
-      char* code = (char*)node->value;
-      printf("%c: %s\n", character[0], code);
-      node = node->next;
+void printFrequencyTable(size_t* frequency_table){
+  for(int i=0; i<256; i++){
+    if(frequency_table[i]!=0){
+      printf("%c: %zu\n", i, frequency_table[i]);
     }
   }
 }
 
-void huffmanPrintTree(BTreeNode* node, int depth) {
-  if (node == NULL) return;
-
-  for (int i = 0; i < depth; ++i) printf("  ");
-  if (node->data) {
-    printf("%c: %zu\n", ((char*)node->data)[0], node->weight);
-  } else {
-    printf("Node: %zu\n", node->weight);
+void printPriorityQueue(PQ* pq){
+  PQNode* temp = pq->root;
+  for(int i=0; i<pq->num_nodes; i++){
+    printf("%c %d\n", temp->data->val, temp->priority);
+    temp = temp->next;
   }
-
-  huffmanPrintTree(node->left, depth + 1);
-  huffmanPrintTree(node->right, depth + 1);
 }
+
+
+void toBinary(char c){
+  for(int i=7; i>=0; i--){
+    printf("%d", (c >> i) & 1);
+  }
+}
+
+void huffmanPrintCodes(char* codes){
+  for(int i=0; i<256; i++){
+    if(codes[i] >= 0){
+      printf("%c: char(%c)\tint(%d)\tbin(", i, codes[i], codes[i]);
+      toBinary(codes[i]);
+      printf(")\n");
+    }
+  }
+}
+
+char* huffmanGenerateCodes(char* str){
+
+  //frequency table
+
+  size_t* ft = huffmanGenFT(str);
+  //printFrequencyTable(frequency);
+  PQ* pq = huffmanGenPQ(ft);
+  //printPriorityQueue(pq);
+  HTNode* ht = huffmanGenHT(pq);
+  //HTNode* ht_t = ht;
+  //printf("root\n");
+  //printf("%c : L%p R%p\n", ht_t->val, ht_t->left, ht_t->right);
+
+  //printf("root->left\n");
+  //printf("%c : L%p R%p\n", ht_t->left->val, ht_t->left->left, ht_t->left->right);
+
+  //printf("root->right\n");
+  //printf("%c : L%p R%p\n", ht_t->right->val, ht_t->right->left, ht_t->right->right);
+
+  //printf("root->right->left\n");
+  //printf("%c : L%p R%p\n", ht_t->right->left->val, ht_t->right->left->left, ht_t->right->left->right);
+
+  //printf("root->right->right\n");
+  //printf("%c : L%p R%p\n", ht_t->right->right->val, ht_t->right->right->left, ht_t->right->right->right);
+
+  //printf("root->right->right->left\n");
+  //printf("%c : L%p R%p\n", ht_t->right->right->left->val, ht_t->right->right->left->left, ht_t->right->right->left->right);
+
+  //printf("root->right->right->right\n");
+  //printf("%c : L%p R%p\n", ht_t->right->right->right->val, ht_t->right->right->right->left, ht_t->right->right->right->right);
+  char* codes = huffmanGenCodes(ht);
+  free(ft);
+  free(ht);
+  free(pq);
+
+  return codes;
+  
+}
+
