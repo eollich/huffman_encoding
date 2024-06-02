@@ -3,11 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-//frequency table DONE
-//pq
-//huffman tree
-//code table
-//code len table?
 
 void pQInsert(PQ* pqueue, HTNode* data, size_t priority) {
   PQNode* new_node = (PQNode*)malloc(sizeof(PQNode));
@@ -86,9 +81,6 @@ PQ* huffmanGenPQ(size_t* ft){
   return pq;
 }
 
-HTNode* huffmanGenHT(PQ* pq);
-char* huffmanGenCodes(HTNode* ht_root);
-
 
 HTNode* huffmanGenHT(PQ* pq){
   PQNode* left;
@@ -115,29 +107,45 @@ HTNode* huffmanGenHT(PQ* pq){
 }
 
 
-void huffmanGenCodesHelper(char* codes, HTNode* node, char code, int depth){
+void huffmanGenCodesHelper(Huffman* huff, HTNode* node, unsigned char code, int depth){
   if(!node->left && !node->right){
-    codes[node->val] = code;
+    code <<= (8-depth);
+    huff->code_table[(int)node->val] = code;
+    huff->code_lens[(int)node->val] = depth;
     return;
   }
 
   if(node->left){
-    huffmanGenCodesHelper(codes, node->left, code<<1 | 0, depth+1);
+    huffmanGenCodesHelper(huff, node->left, code<<1 | 0, depth+1);
   }
 
   if(node->right){
-    huffmanGenCodesHelper(codes, node->right, code<<1 | 1, depth+1);
+    huffmanGenCodesHelper(huff, node->right, code<<1 | 1, depth+1);
   }
 }
 
-char* huffmanGenCodes(HTNode* ht_root){
-  char* codes = malloc(256 * sizeof(char));
-  memset(codes, -1, 256*sizeof(char));
+Huffman* huffmanGenCodes(HTNode* ht_root){
+  Huffman* huffman = malloc(sizeof(Huffman));
+  if(!huffman){
+    fprintf(stderr, "Malloc error creating huffman object in huffmanGenCodes\n");
+    exit(EXIT_FAILURE);
+  }
+  unsigned char* code_table = malloc(256 * sizeof(char));
+  int* code_lens = malloc(256 * sizeof(char));
+  if(!code_table || !code_lens){
+    fprintf(stderr, "Malloc error creating code table in huffmanGenCodes\n");
+    exit(EXIT_FAILURE);
+  }
+  memset(code_table, 0, 256*sizeof(char));
+  memset(code_lens, -1, 256*sizeof(char));
+  huffman->encoded_tree=NULL;
+  huffman->code_table = code_table;
+  huffman->code_lens = code_lens;
 
-  huffmanGenCodesHelper(codes, ht_root, 0, 0);
+  huffmanGenCodesHelper(huffman, ht_root, 0, 0);
 
 
-  return codes;
+  return huffman;
 }
 
 
@@ -158,58 +166,34 @@ void printPriorityQueue(PQ* pq){
 }
 
 
-void toBinary(char c){
-  for(int i=7; i>=0; i--){
+void toBinary(char c, int num_bits){
+  for(int i=7; i>=8-num_bits; i--){
     printf("%d", (c >> i) & 1);
   }
 }
 
-void huffmanPrintCodes(char* codes){
+void huffmanPrintCodes(Huffman* huff){
   for(int i=0; i<256; i++){
-    if(codes[i] >= 0){
-      printf("%c: char(%c)\tint(%d)\tbin(", i, codes[i], codes[i]);
-      toBinary(codes[i]);
+    unsigned char* codes = huff->code_table;
+    if(huff->code_lens[i] > 0){
+      printf("%c: char(%-3c)\tint(%-3d)\tbin(", i, codes[i], codes[i]);
+      toBinary(codes[i], huff->code_lens[i]);
       printf(")\n");
     }
   }
 }
 
-char* huffmanGenerateCodes(char* str){
-
-  //frequency table
+Huffman* huffmanGenerateCodes(char* str){
 
   size_t* ft = huffmanGenFT(str);
-  //printFrequencyTable(frequency);
   PQ* pq = huffmanGenPQ(ft);
-  //printPriorityQueue(pq);
   HTNode* ht = huffmanGenHT(pq);
-  //HTNode* ht_t = ht;
-  //printf("root\n");
-  //printf("%c : L%p R%p\n", ht_t->val, ht_t->left, ht_t->right);
-
-  //printf("root->left\n");
-  //printf("%c : L%p R%p\n", ht_t->left->val, ht_t->left->left, ht_t->left->right);
-
-  //printf("root->right\n");
-  //printf("%c : L%p R%p\n", ht_t->right->val, ht_t->right->left, ht_t->right->right);
-
-  //printf("root->right->left\n");
-  //printf("%c : L%p R%p\n", ht_t->right->left->val, ht_t->right->left->left, ht_t->right->left->right);
-
-  //printf("root->right->right\n");
-  //printf("%c : L%p R%p\n", ht_t->right->right->val, ht_t->right->right->left, ht_t->right->right->right);
-
-  //printf("root->right->right->left\n");
-  //printf("%c : L%p R%p\n", ht_t->right->right->left->val, ht_t->right->right->left->left, ht_t->right->right->left->right);
-
-  //printf("root->right->right->right\n");
-  //printf("%c : L%p R%p\n", ht_t->right->right->right->val, ht_t->right->right->right->left, ht_t->right->right->right->right);
-  char* codes = huffmanGenCodes(ht);
+  Huffman* huffman = huffmanGenCodes(ht);
   free(ft);
   free(ht);
   free(pq);
 
-  return codes;
+  return huffman;
   
 }
 

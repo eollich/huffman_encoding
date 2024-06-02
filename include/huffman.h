@@ -20,14 +20,20 @@ typedef struct {
   PQNode* root;
 } PQ;
 
+typedef struct Huffman{
+  char* encoded_tree;
+  unsigned char* code_table;
+  int* code_lens;
+} Huffman;
 
-char* huffmanGenerateCodes(char* str);
-void huffmanPrintCodes(char* codes);
+
+Huffman* huffmanGenerateCodes(char* str);
+void huffmanPrintCodes(Huffman* huff);
 
 size_t* huffmanGenFT(char* str);
 PQ* huffmanGenPQ(size_t* ft);
 HTNode* huffmanGenHT(PQ* pq);
-char* huffmanGenCodes(HTNode* ht_root);
+Huffman* huffmanGenCodes(HTNode* ht_root);
 
 
 void printFrequencyTable(size_t* frequency_table);

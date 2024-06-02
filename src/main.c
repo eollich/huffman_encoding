@@ -1,6 +1,8 @@
 #include <huffman.h>
 int main(void){
-  char* codes = huffmanGenerateCodes("aaasdff");
-  huffmanPrintCodes(codes);
+
+  Huffman* huff = huffmanGenerateCodes("aaasdff");
+  huffmanPrintCodes(huff);
+
   return 0;
 }
