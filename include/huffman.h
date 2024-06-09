@@ -20,11 +20,18 @@ typedef struct {
   PQNode* root;
 } PQ;
 
+typedef struct{
+  unsigned char* code;
+  int num_bytes;
+  int leftover_bits;
+} PackedCode;
+
 typedef struct Huffman{
   char* encoded_tree;
-  unsigned char* code_table;
+  PackedCode** code_table;
   int* code_lens;
 } Huffman;
+
 
 
 Huffman* huffmanGenerateCodes(char* str);
