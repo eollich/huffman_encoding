@@ -5,6 +5,7 @@
 
 void toBinary(unsigned char* code, int num_bits) {
   for (int i = 0; i < num_bits; i++) {
+    if(i!=0 && i%8 == 0) printf(" ");
     printf("%d", (code[i / 8] >> (7 - (i % 8))) & 1);
   }
 }
@@ -119,7 +120,10 @@ void huffmanGenCodesHelper(Huffman* huff, HTNode* node, unsigned char* code, int
     }
     memcpy(packed_code->code, code, num_bytes);
     packed_code->num_bytes = num_bytes;
+    //check
+    packed_code->leftover_bits = 8 - depth % 8;
     packed_code->leftover_bits = depth % 8;
+    packed_code->leftover_bits = depth % 8 == 0 ? 8 : depth % 8;
     huff->code_table[(int)node->val] = packed_code;
     huff->code_lens[(int)node->val] = depth;
     return;
@@ -144,7 +148,7 @@ void huffmanGenCodesHelper(Huffman* huff, HTNode* node, unsigned char* code, int
   if (node->right) {
     unsigned char* temp_code = malloc((depth / 8) + 1);
     memcpy(temp_code, code, (depth / 8) + 1);
-    temp_code[depth / 8] |= 1 << (7 - (depth % 8)); // Set bit to 1
+    temp_code[depth / 8] |= 1 << (7 - (depth % 8));
     huffmanGenCodesHelper(huff, node->right, temp_code, depth + 1);
     free(temp_code);
   }
@@ -167,7 +171,7 @@ Huffman* huffmanGenCodes(HTNode* ht_root) {
   huffman->code_table = code_table;
   huffman->code_lens = code_lens;
 
-  unsigned char* code = malloc(1); // Start with one byte
+  unsigned char* code = malloc(1);
   if (!code) {
     fprintf(stderr, "Malloc error creating initial code in huffmanGenCodes\n");
     exit(EXIT_FAILURE);
@@ -196,7 +200,7 @@ void printPriorityQueue(PQ* pq) {
 
 void huffmanPrintCodes(Huffman* huff) {
   for (int i = 0; i < 256; i++) {
-    if (huff->code_lens[i] > 0) {
+    if (huff->code_table[i]!=NULL) {
       printf("%c: bin(", i);
       toBinary(huff->code_table[i]->code, huff->code_lens[i]);
       printf(")\n");
@@ -215,4 +219,102 @@ Huffman* huffmanGenerateCodes(char* str) {
   free(pq);
 
   return huffman;
+}
+
+
+void addPackedCode(PackedCode* pc1, PackedCode* pc2) {
+  int total_bits = (pc1->num_bytes - 1) * 8 + pc1->leftover_bits + (pc2->num_bytes - 1) * 8 + pc2->leftover_bits;
+  int num_bytes = (total_bits + 7) / 8;
+
+  unsigned char* new_code = calloc(num_bytes, sizeof(unsigned char));
+  if (!new_code) {
+    fprintf(stderr, "Calloc error in addPackedCode\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if(pc1->code)
+    for (int i = 0; i < pc1->num_bytes; i++) {
+      new_code[i] = pc1->code[i];
+    }
+
+  int bit_pos = pc1->leftover_bits;
+  int byte_pos = pc1->num_bytes - 1;
+
+  for (int i = 0; i < pc2->num_bytes; i++) {
+    new_code[byte_pos] |= pc2->code[i] >> bit_pos;
+
+    if (bit_pos > 0 && byte_pos + 1 < num_bytes) {
+      new_code[byte_pos + 1] |= pc2->code[i] << (8 - bit_pos);
+    }
+
+    byte_pos++;
+  }
+
+  free(pc1->code);
+  pc1->code = new_code;
+  pc1->num_bytes = num_bytes;
+  pc1->leftover_bits = total_bits % 8;
+  if (pc1->leftover_bits == 0) {
+    pc1->leftover_bits = 8;
+  }
+}
+
+
+void printPackedCode(PackedCode* pc){
+  toBinary(pc->code, pc->num_bytes * 8 - (8 - pc->leftover_bits));
+  printf("\n");
+}
+
+
+int calculateEncodedTreeLength(HTNode* node) {
+  if (node->left == NULL && node->right == NULL) {
+    return 1 + 8;
+  } else {
+    return 1 + calculateEncodedTreeLength(node->left) + calculateEncodedTreeLength(node->right);
+  }
+}
+
+void encodeNodeToBuffer(HTNode* node, char* buffer, int* bit_pos) {
+  if (node->left == NULL && node->right == NULL) {
+    buffer[*bit_pos / 8] |= (1 << (7 - (*bit_pos % 8)));
+    (*bit_pos)++;
+    for (int i = 0; i < 8; i++) {
+      if (node->val & (1 << (7 - i))) {
+        buffer[*bit_pos / 8] |= (1 << (7 - (*bit_pos % 8)));
+      }
+      (*bit_pos)++;
+    }
+  } else {
+    buffer[*bit_pos / 8] &= ~(1 << (7 - (*bit_pos % 8)));
+    (*bit_pos)++;
+    encodeNodeToBuffer(node->left, buffer, bit_pos);
+    encodeNodeToBuffer(node->right, buffer, bit_pos);
+  }
+}
+
+char* huffmanEncodeTree(HTNode* root) {
+  if (!root) return NULL;
+
+  int length = calculateEncodedTreeLength(root);
+  int numBytes = (length + 7) / 8;
+
+  char* buffer = (char*)calloc(numBytes, sizeof(char));
+  if (!buffer) {
+    fprintf(stderr, "Calloc error in huffmanEncodeTree\n");
+    exit(EXIT_FAILURE);
+  }
+
+  int bit_pos = 0;
+  encodeNodeToBuffer(root, buffer, &bit_pos);
+
+  return buffer;
+}
+
+void printEncodedTree(char* encoded_tree, int length) {
+  for (int i = 0; i < (length + 7) / 8; i++) {
+    for (int j = 7; j >= 0; j--) {
+      printf("%d", (encoded_tree[i] >> j) & 1);
+    }
+  }
+  printf("\n");
 }

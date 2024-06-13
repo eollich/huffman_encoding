@@ -1,8 +1,58 @@
 #include <huffman.h>
+#include <stdio.h>
+#include <string.h>
+
 int main(void){
-  char* str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\nSed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magna aliqua.";
+  //bug when only one code, length is 0 so doesnt show ( only in print ) Kind of fixed, now just empty
+  char* str = "asdf";
 
   Huffman* huff = huffmanGenerateCodes(str);
   huffmanPrintCodes(huff);
+
+  printf("%d\n", *huff->code_table['a']->code);
+
+
+  //PackedCode* pc = huff->code_table[(int)('f')];
+  //printf("%d\n", pc->leftover_bits);
+  //printPackedCode(pc);
+
+
+  //unsigned char ca[] = {0b11000000, 0b10101010};
+  //PackedCode a = {ca, 2, 8};
+
+  //addPackedCode(pc, &a);
+  //printPackedCode(pc);
+
+  PackedCode* final = malloc(sizeof(PackedCode));
+  final->leftover_bits= 0;
+  final->code=NULL;
+  final->num_bytes=1;
+
+  //addPackedCode(final, huff->code_table[(int)('a')]);
+  //addPackedCode(final, huff->code_table[(int)('b')]);
+  //printPackedCode(final);
+  //printPackedCode(huff->code_table[(int)('a')]);
+
+  char* ex = str;
+  while(*ex!='\0'){
+    addPackedCode(final, huff->code_table[(int)(*ex)]);
+    //printf("added :%c\n", *ex);
+    //printPackedCode(final);
+    //printf("\n\n");
+    ex++;
+  }
+
+  printf("HUFF ENCODED STRING BYTE COUNT: %d\n", final->num_bytes);
+
+
+  for(int i=0; i<final->num_bytes; i++){
+    printf("%c", final->code[i]);
+  }
+  printf("\n");
+
+  printf("ORIGINAL STRING BYTE COUNT: %zu\n", strlen(str));
+  printf("%s\n",str);
+
+
   return 0;
 }

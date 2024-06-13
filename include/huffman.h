@@ -26,7 +26,7 @@ typedef struct{
   int leftover_bits;
 } PackedCode;
 
-typedef struct Huffman{
+typedef struct{
   char* encoded_tree;
   PackedCode** code_table;
   int* code_lens;
@@ -44,5 +44,12 @@ Huffman* huffmanGenCodes(HTNode* ht_root);
 
 
 void printFrequencyTable(size_t* frequency_table);
+
+void addPackedCode(PackedCode* pc1, PackedCode* pc2);
+void printPackedCode(PackedCode* pc);
+
+char* huffmanEncodeTree(HTNode* root);
+int calculateEncodedTreeLength(HTNode* node);
+void printEncodedTree(char* encoded_tree, int length);
 
 #endif
